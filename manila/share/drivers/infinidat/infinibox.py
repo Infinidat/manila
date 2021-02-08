@@ -44,7 +44,10 @@ LOG = logging.getLogger(__name__)
 infinidat_connection_opts = [
     cfg.HostAddressOpt('infinibox_hostname',
                        help='The name (or IP address) for the INFINIDAT '
-                       'Infinibox storage system.'), ]
+                       'Infinibox storage system.'),
+    cfg.BoolOpt('infinidat_use_ssl',
+                help=('Specifies whether to use SSL for '
+                      'network communication.'), default=True), ]
 
 infinidat_auth_opts = [
     cfg.StrOpt('infinibox_login',
@@ -120,7 +123,9 @@ class InfiniboxShareDriver(driver.ShareDriver):
             self._safe_get_from_config_or_fail(
                 'infinidat_nas_network_space_name'))
 
-        self._system = infinisdk.InfiniBox(self.management_address, auth=auth)
+        use_ssl = self.configuration.safe_get('infinidat_use_ssl')
+        self._system = infinisdk.InfiniBox(
+            self.management_address, auth=auth, use_ssl=use_ssl)
         self._system.login()
 
         backend_name = self.configuration.safe_get('share_backend_name')
