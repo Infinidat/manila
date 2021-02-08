@@ -44,7 +44,10 @@ LOG = logging.getLogger(__name__)
 infinidat_connection_opts = [
     cfg.HostAddressOpt('infinibox_hostname',
                        help='The name (or IP address) for the INFINIDAT '
-                       'Infinibox storage system.'), ]
+                       'Infinibox storage system.'),
+    cfg.BoolOpt('infinidat_use_ssl',
+                help=('Specifies whether to use SSL for '
+                      'network communication.'), default=True), ]
 
 infinidat_auth_opts = [
     cfg.StrOpt('infinibox_login',
@@ -104,8 +107,9 @@ class InfiniboxShareDriver(driver.ShareDriver):
         self.configuration.append_config_values(infinidat_auth_opts)
         self.configuration.append_config_values(infinidat_general_opts)
 
-    def _setup_and_get_system_object(self, management_address, auth):
-        system = infinisdk.InfiniBox(management_address, auth=auth)
+    def _setup_and_get_system_object(self, management_address, auth, use_ssl):
+        system = infinisdk.InfiniBox(
+            management_address, auth=auth, use_ssl=use_ssl)
         system.api.add_auto_retry(
             lambda e: isinstance(
                 e, infinisdk.core.exceptions.APITransportFailure) and
@@ -125,6 +129,7 @@ class InfiniboxShareDriver(driver.ShareDriver):
         infinibox_password = (
             self._safe_get_from_config_or_fail('infinibox_password'))
         auth = (infinibox_login, infinibox_password)
+        use_ssl = self.configuration.safe_get('infinidat_use_ssl')
 
         management_address = (
             self._safe_get_from_config_or_fail('infinibox_hostname'))
@@ -137,7 +142,7 @@ class InfiniboxShareDriver(driver.ShareDriver):
                 'infinidat_nas_network_space_name'))
 
         self._system = (
-            self._setup_and_get_system_object(management_address, auth))
+            self._setup_and_get_system_object(management_address, auth, use_ssl))
 
         backend_name = self.configuration.safe_get('share_backend_name')
         self._backend_name = backend_name or self.__class__.__name__
